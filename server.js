@@ -6,16 +6,12 @@ const mysql = require("mysql2");
 
 const app = express();
 
-app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST"]
-}));
-
+app.use(cors());
 app.use(express.json());
 
-// ==============================
-// MySQL Connection (Railway)
-// ==============================
+// ======================
+// MySQL Pool Connection
+// ======================
 
 const db = mysql.createPool({
     host: process.env.MYSQL_HOST,
@@ -23,32 +19,36 @@ const db = mysql.createPool({
     user: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
     database: process.env.MYSQL_DATABASE,
+
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+
+    connectTimeout: 30000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
 
-// Test Database Connection
+// Test Connection
+
 db.getConnection((err, connection) => {
+
     if (err) {
         console.log("❌ MySQL Error:", err);
     } else {
         console.log("✅ MySQL Connected");
         connection.release();
     }
+
 });
 
-// ==============================
-// Home Route
-// ==============================
+// ======================
+// Routes
+// ======================
 
 app.get("/", (req, res) => {
-    res.send("Backend is Running 🚀");
+    res.send("Backend Running Successfully");
 });
-
-// ==============================
-// Login API
-// ==============================
 
 app.post("/submit", (req, res) => {
 
@@ -60,15 +60,14 @@ app.post("/submit", (req, res) => {
         });
     }
 
-    const sql = `
-        INSERT INTO users (phone, password)
-        VALUES (?, ?)
-    `;
+    const sql =
+        "INSERT INTO users(phone,password) VALUES(?,?)";
 
     db.query(sql, [phone, password], (err, result) => {
 
         if (err) {
             console.log(err);
+
             return res.status(500).json({
                 message: "Database Error"
             });
@@ -83,52 +82,9 @@ app.post("/submit", (req, res) => {
 
 });
 
-// ==============================
-// Details API
-// ==============================
+// ======================
 
-app.post("/details", (req, res) => {
-
-    const {
-        fullName,
-        problemType,
-        experienceLevel,
-        pin
-    } = req.body;
-
-    const sql = `
-        INSERT INTO details
-        (full_name, problem_type, experience_level, pin)
-        VALUES (?, ?, ?, ?)
-    `;
-
-    db.query(
-        sql,
-        [fullName, problemType, experienceLevel, pin],
-        (err, result) => {
-
-            if (err) {
-                console.log(err);
-                return res.status(500).json({
-                    message: "Database Error"
-                });
-            }
-
-            res.json({
-                success: true,
-                message: "Details Saved Successfully"
-            });
-
-        }
-    );
-
-});
-
-// ==============================
-// Server
-// ==============================
-
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5500;
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
