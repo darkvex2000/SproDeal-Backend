@@ -24,24 +24,23 @@ const db = mysql.createPool({
     connectionLimit: 10,
     queueLimit: 0,
 
-    connectTimeout: 30000,
+    connectTimeout: 20000,
     enableKeepAlive: true,
     keepAliveInitialDelay: 0
 });
 
 // Test Connection
-
 db.getConnection((err, connection) => {
-
     if (err) {
-        console.log("❌ MySQL Error:", err);
-    } else {
-        console.log("✅ MySQL Connected");
-        connection.release();
+        console.error(err);
+        console.log("Code:", err.code);
+        console.log("Message:", err.message);
+        return;
     }
 
+    console.log("✅ MySQL Connected");
+    connection.release();
 });
-
 // ======================
 // Routes
 // ======================
