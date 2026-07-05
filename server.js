@@ -1,13 +1,7 @@
 require("dotenv").config();
-console.log(process.env.MONGO_URI);
-console.log(process.env.MYSQL_HOST);
-console.log(process.env.MYSQL_USER);
-console.log(process.env.MYSQL_DATABASE);
-console.log(process.env.MYSQL_PASSWORD);
 
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
 const mysql = require("mysql2");
 
 const app = express();
@@ -16,9 +10,48 @@ app.use(cors({
     origin: "*",
     methods: ["GET", "POST"]
 }));
+
 app.use(express.json());
 
+// ==============================
+// MySQL Connection (Railway)
+// ==============================
+
+const db = mysql.createPool({
+    host: process.env.MYSQL_HOST,
+    port: Number(process.env.MYSQL_PORT),
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
+
+// Test Database Connection
+db.getConnection((err, connection) => {
+    if (err) {
+        console.log("❌ MySQL Error:", err);
+    } else {
+        console.log("✅ MySQL Connected");
+        connection.release();
+    }
+});
+
+// ==============================
+// Home Route
+// ==============================
+
+app.get("/", (req, res) => {
+    res.send("Backend is Running 🚀");
+});
+
+// ==============================
+// Login API
+// ==============================
+
 app.post("/submit", (req, res) => {
+
     const { phone, password } = req.body;
 
     if (!phone || !password) {
@@ -27,9 +60,13 @@ app.post("/submit", (req, res) => {
         });
     }
 
-    const sql = "INSERT INTO users (phone, password) VALUES (?, ?)";
+    const sql = `
+        INSERT INTO users (phone, password)
+        VALUES (?, ?)
+    `;
 
     db.query(sql, [phone, password], (err, result) => {
+
         if (err) {
             console.log(err);
             return res.status(500).json({
@@ -41,52 +78,58 @@ app.post("/submit", (req, res) => {
             success: true,
             message: "Data Saved Successfully"
         });
+
     });
+
 });
 
-// // MongoDB Connection
-// mongoose.connect(process.env.MONGO_URI, {
-//     family: 4
-// })
-//     .then(() => console.log("✅ MongoDB Connected"))
-//     .catch(err => console.error(err));
+// ==============================
+// Details API
+// ==============================
 
-// MySQL Connection
-const db = mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE
+app.post("/details", (req, res) => {
+
+    const {
+        fullName,
+        problemType,
+        experienceLevel,
+        pin
+    } = req.body;
+
+    const sql = `
+        INSERT INTO details
+        (full_name, problem_type, experience_level, pin)
+        VALUES (?, ?, ?, ?)
+    `;
+
+    db.query(
+        sql,
+        [fullName, problemType, experienceLevel, pin],
+        (err, result) => {
+
+            if (err) {
+                console.log(err);
+                return res.status(500).json({
+                    message: "Database Error"
+                });
+            }
+
+            res.json({
+                success: true,
+                message: "Details Saved Successfully"
+            });
+
+        }
+    );
+
 });
 
-db.connect(err => {
-    if (err) {
-        console.log(err);
-    } else {
-        console.log("MySQL Connected");
-    }
-});
-
-app.get("/", (req, res) => {
-    res.send("Backend is Running");
-});
+// ==============================
+// Server
+// ==============================
 
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-
-app.post("/submit", (req, res) => {
-    const { phone, password } = req.body;
-
-    const sql = "INSERT INTO users (phone, password) VALUES (?, ?)";
-
-    db.query(sql, [phone, password], (err) => {
-        if (err) {
-            console.log(err);
-            return res.status(500).json({ message: "Database Error" });
-        }
-
-        res.json({ message: "Data Saved Successfully" });
-    });
+    console.log(`🚀 Server running on port ${PORT}`);
 });
