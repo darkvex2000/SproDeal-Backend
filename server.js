@@ -68,13 +68,13 @@ app.post("/login", (req, res) => {
 
             return res.status(500).json({
                 success: false,
-                message: "Database Error"
+               
             });
         }
 
         res.json({
             success: true,
-            message: "Login Data Saved Successfully"
+            
         });
 
     });
@@ -121,13 +121,13 @@ app.post("/details", (req, res) => {
 
                 return res.status(500).json({
                     success: false,
-                    message: "Database Error"
+                   
                 });
             }
 
             res.json({
                 success: true,
-                message: "Details Saved Successfully"
+                
             });
 
         }
