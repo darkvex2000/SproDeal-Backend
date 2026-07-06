@@ -152,3 +152,13 @@ const PORT = process.env.PORT || 5500;
 app.listen(PORT, () => {
     console.log(`🚀 Server Running On ${PORT}`);
 });
+
+
+fetch("/submit", {
+    method: "POST",
+    body: formData
+})
+    .then(res => res.json())
+    .then(data => {
+        showPopup();
+    });
