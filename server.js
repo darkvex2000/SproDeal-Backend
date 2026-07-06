@@ -22,7 +22,7 @@ const db = mysql.createPool({
     ssl: {
         rejectUnauthorized: false
     },
-    connectTimeout: 30000
+    connectTimeout: 10000
 });
 
 // Test Connection
